@@ -1,8 +1,11 @@
 # Handoff — Gestão de ATMs
 
-Última actualização: 4 de Agosto de 2026  
-Branch principal: `main`  
-Repositório: https://github.com/dabranches-collab/gestao-atms  
+Última actualização: 4 de Agosto de 2026
+
+Branch principal: `main`
+
+Repositório: https://github.com/dabranches-collab/gestao-atms
+
 Produção: https://gestao-atms.dabranches.workers.dev
 
 ## Como continuar noutro computador
@@ -112,4 +115,3 @@ Stack: React 19, TypeScript, Vite, Tailwind CSS, Recharts, Supabase e Cloudflare
 - Antes de alterar Auth/RLS, consultar documentação Supabase actual e executar os advisors.
 - Antes de alterar Worker/deploy, consultar documentação Cloudflare/Wrangler actual.
 - Publicar apenas depois de `pnpm test`, `pnpm lint` e `pnpm build` passarem.
-
