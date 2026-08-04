@@ -63,8 +63,8 @@ function Shell() {
           ))}
         </nav>
         <div className="absolute bottom-5 left-5 right-5 rounded-xl border border-white/10 bg-white/5 p-3 text-xs text-slate-300">
-          <b className="text-white">Dados reservados</b>
-          <p className="mb-0">Acesso sujeito a autenticação e perfil.</p>
+          <b className="text-white">Dados organizados por cliente</b>
+          <p className="mb-0">Acesso simples por utilizador e perfil.</p>
         </div>
       </aside>
       <main>
