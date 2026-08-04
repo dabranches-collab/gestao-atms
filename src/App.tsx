@@ -15,6 +15,7 @@ import { NavLink, Navigate, Route, Routes } from 'react-router-dom'
 import { useDropzone } from 'react-dropzone'
 import { parseWorkbook } from './lib/excel/importer'
 import type { ImportPreview } from './types/domain'
+import { formatMetricValue, metricDefinitions, type MetricKey } from './config/metrics'
 
 const queryClient = new QueryClient()
 const nav = [
@@ -153,7 +154,7 @@ function Overview() {
           <h2 className="mt-0 text-base">Evolução mensal</h2>
           <div className="mt-8 flex h-52 items-end gap-3">
             {[55, 62, 58, 70, 76, 84, 91].map((n, i) => (
-                <div className="flex h-full flex-1 flex-col items-center justify-end gap-2" key={i}>
+              <div className="flex h-full flex-1 flex-col items-center justify-end gap-2" key={i}>
                 <div className="w-full rounded-t-lg bg-emerald-600/90" style={{ height: `${n}%` }} />
                 <small className="text-slate-400">
                   {['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul'][i]}
@@ -181,39 +182,148 @@ function Overview() {
   )
 }
 function Equipment() {
+  const [selectedMetric, setSelectedMetric] = useState<MetricKey>('transactionCount')
+  const selectedDefinition = metricDefinitions.find((metric) => metric.key === selectedMetric)!
+  const demoEquipment = [
+    {
+      terminalCode: 'ATM-0048',
+      bat: 'BCI',
+      transactionCount: 8420,
+      transactionAmount: 94_200_000,
+      activeTransactionDays: 24,
+      replenishmentCount: 18,
+      replenishmentAmount: 126_000_000,
+      dispensedAmount: 91_400_000,
+      collectedAmount: 31_800_000,
+      cashShortageDowntime: 0.142,
+      variation: -31,
+      alert: 'Crítico',
+    },
+    {
+      terminalCode: 'ATM-0081',
+      bat: 'BCI',
+      transactionCount: 12780,
+      transactionAmount: 151_800_000,
+      activeTransactionDays: 31,
+      replenishmentCount: 22,
+      replenishmentAmount: 184_500_000,
+      dispensedAmount: 148_200_000,
+      collectedAmount: 34_900_000,
+      cashShortageDowntime: 0.021,
+      variation: 8,
+      alert: 'Normal',
+    },
+    {
+      terminalCode: 'ATM-0103',
+      bat: 'BCI',
+      transactionCount: 6340,
+      transactionAmount: 70_400_000,
+      activeTransactionDays: 19,
+      replenishmentCount: 14,
+      replenishmentAmount: 102_300_000,
+      dispensedAmount: 68_100_000,
+      collectedAmount: 33_200_000,
+      cashShortageDowntime: 0.048,
+      variation: -42,
+      alert: 'Alto',
+    },
+  ]
   return (
     <>
-      <Heading title="Equipamentos" text="Consulte indicadores, tendências e alertas por terminal." />
+      <Heading
+        title="Equipamentos"
+        text="Analise todas as métricas operacionais por terminal e compare com o mês anterior."
+      />
+      <section className="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {metricDefinitions.map((metric) => {
+          const active = selectedMetric === metric.key
+          return (
+            <button
+              key={metric.key}
+              type="button"
+              onClick={() => setSelectedMetric(metric.key)}
+              title={metric.description}
+              className={`rounded-2xl border p-4 text-left transition ${active ? 'border-emerald-600 bg-emerald-50 ring-2 ring-emerald-600/10' : 'border-slate-200 bg-white hover:border-emerald-300'}`}
+            >
+              <span className="label">{metric.shortLabel}</span>
+              <strong className="mt-2 block text-base text-slate-900">{metric.label}</strong>
+              <small
+                className={metric.direction === 'lower-is-better' ? 'text-orange-700' : 'text-slate-500'}
+              >
+                {metric.direction === 'lower-is-better'
+                  ? 'Menor valor é favorável'
+                  : 'Analisar no contexto operacional'}
+              </small>
+            </button>
+          )
+        })}
+      </section>
+      <div className="card mb-5 flex flex-wrap items-center justify-between gap-4 border-emerald-200 bg-emerald-50/50">
+        <div>
+          <p className="label mb-1">Métrica em análise</p>
+          <h2 className="m-0 text-lg">{selectedDefinition.label}</h2>
+          <p className="mb-0 mt-1 text-sm text-slate-600">{selectedDefinition.description}</p>
+        </div>
+        <div className="rounded-xl bg-white px-4 py-3 text-right shadow-sm">
+          <span className="label">Média da rede</span>
+          <strong className="block text-xl text-emerald-800">
+            {formatMetricValue(
+              selectedDefinition,
+              demoEquipment.reduce((sum, row) => sum + row[selectedMetric], 0) / demoEquipment.length,
+            )}
+          </strong>
+        </div>
+      </div>
       <div className="card overflow-x-auto">
-        <table className="w-full min-w-[700px] text-left text-sm">
+        <table className="w-full min-w-[1500px] text-left text-sm">
           <thead className="text-xs uppercase text-slate-500">
             <tr>
-              {['Terminal', 'Cliente', 'Transacções', 'Montante', 'Downtime', 'Tendência', 'Alerta'].map(
-                (h) => (
-                  <th className="pb-4" key={h}>
-                    {h}
-                  </th>
-                ),
-              )}
+              <th className="pb-4 pr-5">Terminal</th>
+              <th className="pb-4 pr-5">Cliente</th>
+              {metricDefinitions.map((metric) => (
+                <th
+                  className={`pb-4 pr-5 ${metric.key === selectedMetric ? 'text-emerald-700' : ''}`}
+                  key={metric.key}
+                >
+                  {metric.shortLabel}
+                </th>
+              ))}
+              <th className="pb-4 pr-5">Variação mensal</th>
+              <th className="pb-4">Alerta</th>
             </tr>
           </thead>
           <tbody>
-            {[
-              ['ATM-0048', 'BCI', '8 420', 'Kz 94,2 M', '14,2%', '↓ 31%', 'Crítico'],
-              ['ATM-0081', 'BCI', '12 780', 'Kz 151,8 M', '2,1%', '↑ 8%', 'Normal'],
-              ['ATM-0103', 'BCI', '6 340', 'Kz 70,4 M', '4,8%', '↓ 42%', 'Alto'],
-            ].map((r) => (
-              <tr className="border-t border-slate-100" key={r[0]}>
-                {r.map((v, i) => (
-                  <td className={`py-4 ${i === 0 ? 'font-semibold' : ''}`} key={i}>
-                    {v}
+            {demoEquipment.map((row) => (
+              <tr className="border-t border-slate-100 hover:bg-slate-50" key={row.terminalCode}>
+                <td className="py-4 pr-5 font-semibold">{row.terminalCode}</td>
+                <td className="py-4 pr-5">{row.bat}</td>
+                {metricDefinitions.map((metric) => (
+                  <td
+                    className={`whitespace-nowrap py-4 pr-5 ${metric.key === selectedMetric ? 'bg-emerald-50 font-semibold text-emerald-900' : ''}`}
+                    key={metric.key}
+                  >
+                    {formatMetricValue(metric, row[metric.key])}
                   </td>
                 ))}
+                <td
+                  className={`whitespace-nowrap py-4 pr-5 font-semibold ${row.variation >= 0 ? 'text-emerald-700' : 'text-red-700'}`}
+                >
+                  {row.variation >= 0 ? '↑' : '↓'} {Math.abs(row.variation)}%
+                </td>
+                <td className="py-4">
+                  <span
+                    className={`rounded-full px-2.5 py-1 text-xs font-semibold ${row.alert === 'Normal' ? 'bg-emerald-100 text-emerald-800' : row.alert === 'Crítico' ? 'bg-red-100 text-red-800' : 'bg-orange-100 text-orange-800'}`}
+                  >
+                    {row.alert}
+                  </span>
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
-        <p className="text-xs text-sky-700">Dados de demonstração.</p>
+        <p className="mb-0 mt-4 text-xs text-sky-700">
+          Dados de demonstração. A variação apresentada acompanha a métrica seleccionada.
+        </p>
       </div>
     </>
   )
