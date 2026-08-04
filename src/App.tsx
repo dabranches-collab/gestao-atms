@@ -270,6 +270,7 @@ function RankingWidget({
   numericValue,
   variant = 'list',
   tone = 'emerald',
+  className = '',
 }: {
   title: string
   subtitle: string
@@ -278,6 +279,7 @@ function RankingWidget({
   numericValue: (row: RankingRow) => number
   variant?: 'list' | 'bars' | 'area' | 'donut'
   tone?: 'emerald' | 'orange' | 'red' | 'sky'
+  className?: string
 }) {
   const colors = {
     emerald: 'bg-emerald-600',
@@ -286,15 +288,41 @@ function RankingWidget({
     sky: 'bg-sky-600',
   }
   const chartColors = { emerald: '#059669', orange: '#f97316', red: '#ef4444', sky: '#0284c7' }
+  const surfaces = {
+    emerald: 'border-emerald-100 bg-gradient-to-br from-white to-emerald-50/70',
+    orange: 'border-orange-100 bg-gradient-to-br from-white to-orange-50/70',
+    red: 'border-red-100 bg-gradient-to-br from-white to-red-50/70',
+    sky: 'border-sky-100 bg-gradient-to-br from-white to-sky-50/70',
+  }
   const data = rows.slice(0, 10).map((row) => ({
     name: row.terminal.replace('ATM-', ''),
     value: numericValue(row),
   }))
   return (
-    <article className="card">
-      <div className="mb-4">
-        <h2 className="m-0 text-base">{title}</h2>
-        <p className="mb-0 mt-1 text-xs text-slate-400">{subtitle}</p>
+    <article
+      className={`relative overflow-hidden rounded-3xl border p-5 shadow-sm ${surfaces[tone]} ${className}`}
+    >
+      <div
+        className="pointer-events-none absolute -right-12 -top-14 h-32 w-32 rounded-full opacity-10"
+        style={{ background: chartColors[tone] }}
+      />
+      <div className="relative mb-5 flex items-start justify-between gap-4">
+        <div>
+          <p
+            className="m-0 text-[10px] font-bold uppercase tracking-[0.2em]"
+            style={{ color: chartColors[tone] }}
+          >
+            Análise de rede
+          </p>
+          <h2 className="mb-0 mt-1 text-lg">{title}</h2>
+          <p className="mb-0 mt-1 text-xs text-slate-500">{subtitle}</p>
+        </div>
+        <div
+          className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-sm font-black text-white"
+          style={{ background: chartColors[tone] }}
+        >
+          10
+        </div>
       </div>
       {variant === 'bars' && (
         <div className="mb-5 h-44 rounded-xl bg-slate-50 p-2">
@@ -374,7 +402,7 @@ function RankingWidget({
           </div>
         </div>
       )}
-      <div className="space-y-3">
+      <div className="relative grid gap-x-5 gap-y-3 sm:grid-cols-2">
         {rows.slice(0, 10).map((row, index) => (
           <div className="grid grid-cols-[28px_1fr_auto] items-center gap-2" key={row.terminal}>
             <span className="text-xs font-bold text-slate-400">{index + 1}</span>
@@ -412,6 +440,7 @@ function Rankings() {
       numericValue: (row: RankingRow) => row.transactions,
       variant: 'bars' as const,
       tone: 'emerald' as const,
+      className: '2xl:col-span-2',
     },
     {
       title: '10 menos transacções',
@@ -430,6 +459,7 @@ function Rankings() {
       numericValue: (row: RankingRow) => row.amount,
       variant: 'area' as const,
       tone: 'sky' as const,
+      className: '2xl:col-span-2',
     },
     {
       title: 'Top 10 downtime',
@@ -440,6 +470,7 @@ function Rankings() {
       numericValue: (row: RankingRow) => row.downtime * 100,
       variant: 'donut' as const,
       tone: 'red' as const,
+      className: '2xl:col-span-2',
     },
     {
       title: '10 maiores subidas',
@@ -458,6 +489,7 @@ function Rankings() {
       numericValue: (row: RankingRow) => Math.abs(row.variation),
       variant: 'area' as const,
       tone: 'red' as const,
+      className: '2xl:col-span-2',
     },
     {
       title: 'Top 10 dias activos',
@@ -500,39 +532,62 @@ function Rankings() {
   return (
     <>
       <Heading
-        title="Rankings e variações"
-        text="Top 10, bottom 10, subidas e descidas dos principais indicadores."
+        title="Radar da rede"
+        text="Uma leitura visual dos extremos, movimentos e sinais operacionais."
       />
-      <div className="mb-5 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800">
-        Cada widget apresenta <b>10 equipamentos</b>. Os valores serão alimentados pelas importações mensais.
-      </div>
-      <section className="mb-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <article className="overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-700 to-emerald-500 p-5 text-white shadow-sm">
-          <p className="m-0 text-xs uppercase tracking-wider text-emerald-100">Melhor desempenho</p>
-          <strong className="mt-3 block text-3xl">ATM-0023</strong>
-          <span className="text-sm">21 402 transacções</span>
-        </article>
-        <article className="rounded-2xl border border-red-100 bg-white p-5 shadow-sm">
-          <p className="m-0 text-xs uppercase tracking-wider text-red-500">Downtime crítico</p>
-          <div className="mt-3 flex items-end justify-between">
-            <strong className="text-3xl text-red-600">14,4%</strong>
-            <span className="text-sm font-semibold">ATM-0009</span>
+      <section className="relative mb-6 overflow-hidden rounded-[32px] bg-[#0d2b22] p-6 text-white shadow-xl lg:p-9">
+        <div className="absolute -right-16 -top-20 h-72 w-72 rounded-full border-[42px] border-emerald-400/10" />
+        <div className="absolute bottom-0 right-1/3 h-36 w-36 translate-y-1/2 rounded-full bg-sky-400/10" />
+        <div className="relative grid gap-8 xl:grid-cols-[1.15fr_1fr] xl:items-center">
+          <div>
+            <p className="m-0 text-xs font-bold uppercase tracking-[0.3em] text-emerald-300">
+              Infografia mensal · Julho 2026
+            </p>
+            <h1 className="mb-3 mt-4 max-w-xl text-4xl leading-tight lg:text-5xl">
+              100 leituras que explicam a rede
+            </h1>
+            <p className="max-w-2xl text-sm leading-6 text-emerald-50/70">
+              Dez perspectivas, dez equipamentos por indicador. Os gráficos mostram onde a rede cresce, onde
+              perde força e onde agir primeiro.
+            </p>
+            <div className="mt-7 flex flex-wrap gap-3">
+              <span className="rounded-full bg-emerald-400 px-4 py-2 text-xs font-bold text-[#0d2b22]">
+                10 indicadores
+              </span>
+              <span className="rounded-full border border-white/15 px-4 py-2 text-xs text-white/80">
+                24 ATMs observados
+              </span>
+              <span className="rounded-full border border-white/15 px-4 py-2 text-xs text-white/80">
+                Comparação mensal
+              </span>
+            </div>
           </div>
-        </article>
-        <article className="rounded-2xl border border-sky-100 bg-white p-5 shadow-sm">
-          <p className="m-0 text-xs uppercase tracking-wider text-sky-600">Maior subida</p>
-          <div className="mt-3 flex items-end justify-between">
-            <strong className="text-3xl text-emerald-600">+38%</strong>
-            <span className="text-sm font-semibold">ATM-0007</span>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="col-span-2 rounded-3xl bg-white/8 p-5 backdrop-blur-sm">
+              <p className="m-0 text-xs uppercase tracking-wider text-emerald-200">Líder da rede</p>
+              <div className="mt-2 flex items-end justify-between">
+                <strong className="text-4xl">ATM-0023</strong>
+                <span className="text-right text-sm text-emerald-100">
+                  21 402
+                  <br />
+                  transacções
+                </span>
+              </div>
+            </div>
+            <div className="rounded-3xl bg-red-500 p-5">
+              <p className="m-0 text-[10px] uppercase tracking-wider text-red-100">Downtime crítico</p>
+              <strong className="mt-2 block text-3xl">14,4%</strong>
+              <span className="text-xs text-red-100">ATM-0009</span>
+            </div>
+            <div className="rounded-3xl bg-emerald-400 p-5 text-[#0d2b22]">
+              <p className="m-0 text-[10px] uppercase tracking-wider opacity-70">Maior subida</p>
+              <strong className="mt-2 block text-3xl">+38%</strong>
+              <span className="text-xs">ATM-0007</span>
+            </div>
           </div>
-        </article>
-        <article className="rounded-2xl border border-orange-100 bg-white p-5 shadow-sm">
-          <p className="m-0 text-xs uppercase tracking-wider text-orange-600">Acção prioritária</p>
-          <strong className="mt-3 block text-xl">10 ATMs</strong>
-          <span className="text-sm text-slate-500">abaixo de 25 dias activos</span>
-        </article>
+        </div>
       </section>
-      <section className="grid gap-5 xl:grid-cols-2 2xl:grid-cols-3">
+      <section className="grid gap-5 xl:grid-cols-2 2xl:grid-cols-4">
         {widgets.map((widget) => (
           <RankingWidget key={widget.title} {...widget} />
         ))}
