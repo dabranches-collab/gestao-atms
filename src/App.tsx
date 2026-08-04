@@ -901,6 +901,49 @@ function ChangePinPage() {
   )
 }
 
+function PortalNavigation() {
+  const navigate = useNavigate()
+  async function logout() {
+    await supabase?.auth.signOut()
+    navigate('/')
+  }
+  return (
+    <nav className="flex flex-wrap items-center gap-2" aria-label="Navegação geral">
+      <Link
+        to="/clientes/BCI"
+        className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 no-underline hover:border-emerald-500"
+      >
+        BCI
+      </Link>
+      <Link
+        to="/clientes/BKEVE"
+        className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 no-underline hover:border-emerald-500"
+      >
+        KEVE
+      </Link>
+      <Link
+        to="/clientes"
+        className="rounded-xl border border-emerald-700 bg-white px-3 py-2 text-sm font-semibold text-emerald-800 no-underline hover:bg-emerald-50"
+      >
+        Todos os clientes
+      </Link>
+      <Link
+        to="/clientes/dashboard"
+        className="rounded-xl bg-emerald-700 px-3 py-2 text-sm font-semibold text-white no-underline hover:bg-emerald-800"
+      >
+        Consolidado
+      </Link>
+      <button
+        type="button"
+        onClick={logout}
+        className="rounded-xl px-3 py-2 text-sm font-semibold text-red-600 hover:bg-red-50"
+      >
+        Terminar sessão
+      </button>
+    </nav>
+  )
+}
+
 function ClientChooser() {
   return (
     <main className="min-h-screen bg-[#f4f7f5] p-6 lg:p-12">
@@ -911,17 +954,7 @@ function ClientChooser() {
             <h1 className="mb-2 mt-1 text-3xl">Escolha o cliente</h1>
             <p className="text-slate-500">Cada espaço mantém dados, filtros e navegação separados.</p>
           </div>
-          <div className="flex items-center gap-3">
-            <Link
-              to="/clientes/dashboard"
-              className="rounded-xl bg-emerald-700 px-4 py-3 text-sm font-semibold text-white no-underline hover:bg-emerald-800"
-            >
-              Dashboard consolidado
-            </Link>
-            <Link to="/" className="text-sm text-slate-600 underline">
-              Sair
-            </Link>
-          </div>
+          <PortalNavigation />
         </div>
         <section className="grid gap-6 md:grid-cols-2">
           {clients.map((client) => (
@@ -974,12 +1007,7 @@ function ConsolidatedDashboard() {
             <h1 className="mb-2 mt-1 text-3xl">Dashboard consolidado</h1>
             <p className="m-0 text-slate-500">Visão cruzada do desempenho da rede por banco.</p>
           </div>
-          <Link
-            to="/clientes"
-            className="rounded-xl border border-emerald-700 bg-white px-4 py-3 text-sm font-semibold text-emerald-800 no-underline hover:bg-emerald-50"
-          >
-            Ver todos os clientes
-          </Link>
+          <PortalNavigation />
         </header>
 
         <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
