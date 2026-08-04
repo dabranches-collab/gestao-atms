@@ -24,9 +24,9 @@ Deno.serve(async (request) => {
     JSON.parse(Deno.env.get('SUPABASE_PUBLISHABLE_KEYS') ?? '{}').default ??
     Deno.env.get('SUPABASE_ANON_KEY')!
   const secretKey =
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ??
     Deno.env.get('SUPABASE_SECRET_KEY') ??
-    JSON.parse(Deno.env.get('SUPABASE_SECRET_KEYS') ?? '{}').default ??
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    JSON.parse(Deno.env.get('SUPABASE_SECRET_KEYS') ?? '{}').default
   const pepper = Deno.env.get('PIN_PEPPER')
   if (!pepper) return Response.json({ error: 'LOGIN_NOT_CONFIGURED' }, { status: 503, headers: cors })
 
