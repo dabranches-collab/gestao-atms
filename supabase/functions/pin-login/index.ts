@@ -10,7 +10,10 @@ Deno.serve(async (request) => {
   if (request.method !== 'POST')
     return Response.json({ error: 'METHOD_NOT_ALLOWED' }, { status: 405, headers: cors })
 
-  const publishableKey = Deno.env.get('SUPABASE_PUBLISHABLE_KEY')!
+  const publishableKey =
+    Deno.env.get('SUPABASE_PUBLISHABLE_KEY') ??
+    JSON.parse(Deno.env.get('SUPABASE_PUBLISHABLE_KEYS') ?? '{}').default ??
+    Deno.env.get('SUPABASE_ANON_KEY')!
   if (request.headers.get('apikey') !== publishableKey)
     return Response.json({ error: 'INVALID_API_KEY' }, { status: 401, headers: cors })
 
@@ -25,7 +28,10 @@ Deno.serve(async (request) => {
   }
 
   const url = Deno.env.get('SUPABASE_URL')!
-  const secretKey = Deno.env.get('SUPABASE_SECRET_KEY')!
+  const secretKey =
+    Deno.env.get('SUPABASE_SECRET_KEY') ??
+    JSON.parse(Deno.env.get('SUPABASE_SECRET_KEYS') ?? '{}').default ??
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
   const pepper = Deno.env.get('PIN_PEPPER')
   if (!pepper) return Response.json({ error: 'LOGIN_NOT_CONFIGURED' }, { status: 503, headers: cors })
 
