@@ -19,6 +19,10 @@ import { formatMetricValue, metricDefinitions, type MetricKey } from './config/m
 import { supabase } from './lib/supabase/client'
 
 const queryClient = new QueryClient()
+const clients = [
+  { code: 'BCI', name: 'Banco BCI', shortName: 'BCI' },
+  { code: 'BKEVE', name: 'Banco Keve', shortName: 'KEVE' },
+]
 const nav = [
   { to: '/', label: 'Visão geral', icon: LayoutDashboard },
   { to: '/equipamentos', label: 'Equipamentos', icon: Building2 },
@@ -61,6 +65,23 @@ function Shell() {
               {label}
             </NavLink>
           ))}
+          <div className="my-4 border-t border-white/10" />
+          <NavLink
+            to="/clientes/dashboard"
+            onClick={() => setOpen(false)}
+            className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm text-emerald-100 hover:bg-white/8"
+          >
+            <BarChart3 size={19} />
+            Dashboard consolidado
+          </NavLink>
+          <NavLink
+            to="/clientes"
+            onClick={() => setOpen(false)}
+            className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm text-emerald-100 hover:bg-white/8"
+          >
+            <Building2 size={19} />
+            Todos os clientes
+          </NavLink>
         </nav>
         <div className="absolute bottom-5 left-5 right-5 rounded-xl border border-white/10 bg-white/5 p-3 text-xs text-slate-300">
           <b className="text-white">Dados organizados por cliente</b>
@@ -119,13 +140,22 @@ function Heading({ title, text }: { title: string; text: string }) {
         <p className="mt-1 text-sm text-slate-500">{text}</p>
       </div>
       <div className="flex gap-2">
+        <Link
+          to="/clientes"
+          className="rounded-xl border border-emerald-700 bg-white px-4 py-2 text-sm font-semibold text-emerald-800 no-underline hover:bg-emerald-50"
+        >
+          Trocar banco
+        </Link>
         <select
           value={clientCode}
           onChange={(event) => navigate(`/clientes/${event.target.value}`)}
           className="rounded-xl border border-slate-200 bg-white px-4 py-2"
         >
-          <option value="BCI">BCI</option>
-          <option value="BKEVE">BKEVE</option>
+          {clients.map((client) => (
+            <option value={client.code} key={client.code}>
+              {client.shortName}
+            </option>
+          ))}
         </select>
         <select className="rounded-xl border border-slate-200 bg-white px-4 py-2">
           <option>Julho 2026</option>
@@ -552,30 +582,26 @@ function ChangePinPage() {
 }
 
 function ClientChooser() {
-  const clients = [
-    {
-      code: 'BCI',
-      name: 'Banco BCI',
-      description: 'Indicadores, equipamentos, rankings e importações do BCI.',
-    },
-    {
-      code: 'BKEVE',
-      name: 'Banco Keve',
-      description: 'Indicadores, equipamentos, rankings e importações do Banco Keve.',
-    },
-  ]
   return (
     <main className="min-h-screen bg-[#f4f7f5] p-6 lg:p-12">
       <div className="mx-auto max-w-5xl">
-        <div className="mb-10 flex items-center justify-between">
+        <div className="mb-10 flex flex-wrap items-center justify-between gap-4">
           <div>
             <p className="label">ATM Insight</p>
             <h1 className="mb-2 mt-1 text-3xl">Escolha o cliente</h1>
             <p className="text-slate-500">Cada espaço mantém dados, filtros e navegação separados.</p>
           </div>
-          <Link to="/" className="text-sm text-slate-600 underline">
-            Sair
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link
+              to="/clientes/dashboard"
+              className="rounded-xl bg-emerald-700 px-4 py-3 text-sm font-semibold text-white no-underline hover:bg-emerald-800"
+            >
+              Dashboard consolidado
+            </Link>
+            <Link to="/" className="text-sm text-slate-600 underline">
+              Sair
+            </Link>
+          </div>
         </div>
         <section className="grid gap-6 md:grid-cols-2">
           {clients.map((client) => (
@@ -589,12 +615,126 @@ function ClientChooser() {
               </div>
               <p className="label">Espaço do cliente</p>
               <h2 className="mb-2 mt-1 text-2xl">{client.name}</h2>
-              <p className="text-sm text-slate-500">{client.description}</p>
+              <p className="text-sm text-slate-500">
+                Indicadores, equipamentos, rankings e importações de {client.shortName}.
+              </p>
               <span className="mt-6 inline-block font-semibold text-emerald-700">
                 Entrar em {client.code} →
               </span>
             </Link>
           ))}
+        </section>
+      </div>
+    </main>
+  )
+}
+
+function ConsolidatedDashboard() {
+  const bankMetrics = [
+    { code: 'BCI', atms: 128, transactions: 1284520, amount: 14820000000, uptime: 96.2, alerts: 12 },
+    { code: 'BKEVE', atms: 74, transactions: 692840, amount: 7310000000, uptime: 94.8, alerts: 9 },
+  ]
+  const totals = bankMetrics.reduce(
+    (sum, bank) => ({
+      atms: sum.atms + bank.atms,
+      transactions: sum.transactions + bank.transactions,
+      amount: sum.amount + bank.amount,
+      alerts: sum.alerts + bank.alerts,
+    }),
+    { atms: 0, transactions: 0, amount: 0, alerts: 0 },
+  )
+  const maxTransactions = Math.max(...bankMetrics.map((bank) => bank.transactions))
+
+  return (
+    <main className="min-h-screen bg-[#f4f7f5] p-5 lg:p-10">
+      <div className="mx-auto max-w-7xl">
+        <header className="mb-8 flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <p className="label">ATM Insight · Todos os clientes</p>
+            <h1 className="mb-2 mt-1 text-3xl">Dashboard consolidado</h1>
+            <p className="m-0 text-slate-500">Visão cruzada do desempenho da rede por banco.</p>
+          </div>
+          <Link
+            to="/clientes"
+            className="rounded-xl border border-emerald-700 bg-white px-4 py-3 text-sm font-semibold text-emerald-800 no-underline hover:bg-emerald-50"
+          >
+            Ver todos os clientes
+          </Link>
+        </header>
+
+        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {[
+            ['ATMs geridos', totals.atms.toLocaleString('pt-AO')],
+            ['Transacções', totals.transactions.toLocaleString('pt-AO')],
+            ['Montante total', money.format(totals.amount)],
+            ['Alertas activos', totals.alerts.toLocaleString('pt-AO')],
+          ].map(([label, value]) => (
+            <article className="card" key={label}>
+              <p className="label">{label}</p>
+              <strong className="mt-3 block text-2xl text-slate-900">{value}</strong>
+            </article>
+          ))}
+        </section>
+
+        <section className="mt-5 grid gap-5 xl:grid-cols-[1.35fr_1fr]">
+          <article className="card overflow-x-auto">
+            <div className="mb-5 flex items-center justify-between">
+              <h2 className="m-0 text-lg">Comparação entre bancos</h2>
+              <span className="text-xs text-slate-400">Julho 2026</span>
+            </div>
+            <table className="w-full min-w-[650px] border-collapse text-sm">
+              <thead className="text-left text-xs uppercase tracking-wide text-slate-400">
+                <tr>
+                  {['Banco', 'ATMs', 'Transacções', 'Montante', 'Disponibilidade', 'Alertas'].map((title) => (
+                    <th className="border-b border-slate-200 px-3 py-3" key={title}>
+                      {title}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {bankMetrics.map((bank) => (
+                  <tr key={bank.code} className="border-b border-slate-100 last:border-0">
+                    <td className="px-3 py-4">
+                      <Link className="font-bold text-emerald-800" to={`/clientes/${bank.code}`}>
+                        {bank.code}
+                      </Link>
+                    </td>
+                    <td className="px-3 py-4">{bank.atms}</td>
+                    <td className="px-3 py-4">{bank.transactions.toLocaleString('pt-AO')}</td>
+                    <td className="px-3 py-4">{money.format(bank.amount)}</td>
+                    <td className="px-3 py-4">{bank.uptime.toLocaleString('pt-AO')}%</td>
+                    <td className="px-3 py-4 font-semibold text-orange-600">{bank.alerts}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </article>
+
+          <article className="card">
+            <h2 className="mt-0 text-lg">Peso das transacções</h2>
+            <div className="mt-7 space-y-7">
+              {bankMetrics.map((bank) => (
+                <div key={bank.code}>
+                  <div className="mb-2 flex justify-between text-sm">
+                    <b>{bank.code}</b>
+                    <span>{Math.round((bank.transactions / totals.transactions) * 100)}%</span>
+                  </div>
+                  <div className="h-4 overflow-hidden rounded-full bg-slate-100">
+                    <div
+                      className="h-full rounded-full bg-emerald-600"
+                      style={{ width: `${(bank.transactions / maxTransactions) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="mt-8 rounded-xl bg-emerald-50 p-4 text-sm text-emerald-900">
+              <b>Leitura cruzada:</b> BCI representa{' '}
+              {Math.round((bankMetrics[0].transactions / totals.transactions) * 100)}% das transacções e
+              apresenta a melhor disponibilidade da rede.
+            </div>
+          </article>
         </section>
       </div>
     </main>
@@ -608,6 +748,7 @@ export default function App() {
         <Route path="/" element={<LoginPage />} />
         <Route path="/alterar-pin" element={<ChangePinPage />} />
         <Route path="/clientes" element={<ClientChooser />} />
+        <Route path="/clientes/dashboard" element={<ConsolidatedDashboard />} />
         <Route path="/clientes/:clientCode/*" element={<Shell />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
