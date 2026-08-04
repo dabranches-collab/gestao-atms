@@ -1,5 +1,7 @@
 # Gestão de ATMs
 
+> Para retomar o projecto noutro computador, começar por [`HANDOFF.md`](./HANDOFF.md).
+
 Aplicação React para importar relatórios Excel mensais, validar a estrutura e analisar o desempenho de equipamentos ATM por cliente e período. A interface está em português e os dados apresentados antes da ligação ao Supabase são identificados como demonstração.
 
 ## Requisitos e instalação
@@ -10,9 +12,9 @@ Aplicação React para importar relatórios Excel mensais, validar a estrutura e
 
 Para sincronizar noutro computador: clone o mesmo repositório GitHub, crie um novo `.env.local` local e execute `pnpm install`. Nunca copie credenciais através do Git.
 
-## Estado da primeira fase
+## Estado actual
 
-Inclui layout responsivo, Visão geral, Equipamentos, Rankings, Importações e Definições; importador `.xlsx` local; detecção de referência/período/cliente; leitura de `INFO_REPORT`; validação das dez colunas; pré-visualização; testes unitários e esquema Supabase inicial. Persistência, autenticação visual e rankings reais ficam para a fase seguinte.
+Inclui autenticação por utilizador/PIN, isolamento visual e de dados por cliente, dashboard consolidado, rankings em formato de infografia, importador `.xlsx` local, validação, pré-visualização, testes e esquema Supabase com RLS. Os dashboards continuam demonstrativos e a persistência transaccional das importações é a principal fase seguinte.
 
 ## Segurança e dados reservados
 
