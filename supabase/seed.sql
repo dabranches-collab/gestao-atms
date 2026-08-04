@@ -1,0 +1,1 @@
+-- Os clientes iniciais são criados pela migração; relatórios reais nunca entram no seed.

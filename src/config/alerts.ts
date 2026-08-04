@@ -1,0 +1,1 @@
+export const alertThresholds = { downtimeWarning: 0.05, downtimeCritical: 0.1, transactionDropWarning: -20, transactionDropCritical: -40, minimumActiveDays: 20, replenishmentUtilizationWarning: 0.6 } as const

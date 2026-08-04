@@ -1,0 +1,17 @@
+node_modules/
+dist/
+coverage/
+.env
+.env.*
+!.env.example
+*.xlsx
+*.xls
+samples/*
+!samples/README.md
+imports/
+*.dump
+*.sql.gz
+*.pem
+*.key
+.DS_Store
+*.local
