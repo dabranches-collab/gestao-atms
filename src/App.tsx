@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useState, type FormEvent } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import {
   BarChart3,
@@ -11,11 +11,12 @@ import {
   Trophy,
   UploadCloud,
 } from 'lucide-react'
-import { NavLink, Navigate, Route, Routes } from 'react-router-dom'
+import { Link, NavLink, Navigate, Route, Routes, useNavigate, useParams } from 'react-router-dom'
 import { useDropzone } from 'react-dropzone'
 import { parseWorkbook } from './lib/excel/importer'
 import type { ImportPreview } from './types/domain'
 import { formatMetricValue, metricDefinitions, type MetricKey } from './config/metrics'
+import { supabase } from './lib/supabase/client'
 
 const queryClient = new QueryClient()
 const nav = [
@@ -29,6 +30,8 @@ const money = new Intl.NumberFormat('pt-AO', { style: 'currency', currency: 'AOA
 
 function Shell() {
   const [open, setOpen] = useState(false)
+  const { clientCode = 'BCI' } = useParams()
+  const clientBase = `/clientes/${clientCode}`
   return (
     <div className="min-h-screen bg-[#f4f7f5] lg:grid lg:grid-cols-[260px_1fr]">
       <aside
@@ -47,7 +50,7 @@ function Shell() {
           {nav.map(({ to, label, icon: Icon }) => (
             <NavLink
               key={to}
-              to={to}
+              to={`${clientBase}${to === '/' ? '' : to}`}
               end={to === '/'}
               onClick={() => setOpen(false)}
               className={({ isActive }) =>
@@ -70,7 +73,7 @@ function Shell() {
             <Menu />
           </button>
           <div className="hidden text-sm text-slate-500 sm:block">
-            Última actualização <b className="text-slate-800">Julho de 2026</b>
+            Cliente <b className="text-emerald-800">{clientCode}</b> · Julho de 2026
           </div>
           <button className="flex items-center gap-3 rounded-xl border border-slate-200 px-3 py-2 text-left">
             <div className="grid h-8 w-8 place-items-center rounded-full bg-emerald-100 font-bold text-emerald-800">
@@ -85,20 +88,20 @@ function Shell() {
         </header>
         <div className="p-5 lg:p-8">
           <Routes>
-            <Route path="/" element={<Overview />} />
-            <Route path="/equipamentos" element={<Equipment />} />
+            <Route index element={<Overview />} />
+            <Route path="equipamentos" element={<Equipment />} />
             <Route
-              path="/rankings"
+              path="rankings"
               element={
                 <Base title="Rankings" text="Compare os melhores e piores desempenhos por indicador." />
               }
             />
-            <Route path="/importacoes" element={<Imports />} />
+            <Route path="importacoes" element={<Imports />} />
             <Route
-              path="/definicoes"
+              path="definicoes"
               element={<Base title="Definições" text="Clientes, limites de alerta e perfis de utilizador." />}
             />
-            <Route path="*" element={<Navigate to="/" replace />} />
+            <Route path="*" element={<Navigate to={clientBase} replace />} />
           </Routes>
         </div>
       </main>
@@ -107,6 +110,8 @@ function Shell() {
 }
 
 function Heading({ title, text }: { title: string; text: string }) {
+  const { clientCode = 'BCI' } = useParams()
+  const navigate = useNavigate()
   return (
     <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
       <div>
@@ -114,9 +119,13 @@ function Heading({ title, text }: { title: string; text: string }) {
         <p className="mt-1 text-sm text-slate-500">{text}</p>
       </div>
       <div className="flex gap-2">
-        <select className="rounded-xl border border-slate-200 bg-white px-4 py-2">
-          <option>BCI</option>
-          <option>BKEVE</option>
+        <select
+          value={clientCode}
+          onChange={(event) => navigate(`/clientes/${event.target.value}`)}
+          className="rounded-xl border border-slate-200 bg-white px-4 py-2"
+        >
+          <option value="BCI">BCI</option>
+          <option value="BKEVE">BKEVE</option>
         </select>
         <select className="rounded-xl border border-slate-200 bg-white px-4 py-2">
           <option>Julho 2026</option>
@@ -400,10 +409,147 @@ function Base({ title, text }: { title: string; text: string }) {
     </>
   )
 }
+
+function LoginPage() {
+  const navigate = useNavigate()
+  const [username, setUsername] = useState('')
+  const [pin, setPin] = useState('')
+  const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  async function submit(event: FormEvent) {
+    event.preventDefault()
+    if (!/^\d{4}$/.test(pin)) return setError('Introduza exactamente quatro algarismos.')
+    if (!supabase) return setError('A ligação ao Supabase ainda não está configurada neste ambiente.')
+    setBusy(true)
+    setError('')
+    const { data, error: functionError } = await supabase.functions.invoke('pin-login', {
+      body: { username, pin },
+    })
+    if (functionError || !data?.session) {
+      setBusy(false)
+      return setError('Utilizador ou PIN inválido.')
+    }
+    await supabase.auth.setSession(data.session)
+    navigate('/clientes')
+  }
+
+  return (
+    <main className="grid min-h-screen place-items-center bg-[#0d2b22] p-5">
+      <div className="w-full max-w-md rounded-3xl bg-white p-8 shadow-2xl">
+        <div className="mb-7 flex items-center gap-3">
+          <div className="rounded-xl bg-emerald-400 p-2 text-[#102b22]">
+            <BarChart3 />
+          </div>
+          <div>
+            <h1 className="m-0 text-xl">ATM Insight</h1>
+            <p className="m-0 text-sm text-slate-500">Acesso à análise mensal</p>
+          </div>
+        </div>
+        <form onSubmit={submit} className="space-y-5">
+          <label className="block text-sm font-semibold">
+            Utilizador
+            <input
+              autoComplete="username"
+              value={username}
+              onChange={(event) => setUsername(event.target.value)}
+              className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 font-normal outline-none focus:border-emerald-600"
+              placeholder="Ex.: diogo"
+              required
+            />
+          </label>
+          <label className="block text-sm font-semibold">
+            PIN de 4 algarismos
+            <input
+              inputMode="numeric"
+              autoComplete="current-password"
+              maxLength={4}
+              value={pin}
+              onChange={(event) => setPin(event.target.value.replace(/\D/g, ''))}
+              className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 text-center text-2xl tracking-[0.5em] outline-none focus:border-emerald-600"
+              placeholder="••••"
+              required
+            />
+          </label>
+          {error && <p className="rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</p>}
+          <button
+            disabled={busy}
+            className="w-full rounded-xl bg-emerald-700 px-4 py-3 font-semibold text-white hover:bg-emerald-800 disabled:opacity-60"
+          >
+            {busy ? 'A validar…' : 'Entrar'}
+          </button>
+        </form>
+        <button
+          type="button"
+          onClick={() => navigate('/clientes')}
+          className="mt-4 w-full text-sm text-slate-500 underline"
+        >
+          Pré-visualizar organização dos clientes
+        </button>
+      </div>
+    </main>
+  )
+}
+
+function ClientChooser() {
+  const clients = [
+    {
+      code: 'BCI',
+      name: 'Banco BCI',
+      description: 'Indicadores, equipamentos, rankings e importações do BCI.',
+    },
+    {
+      code: 'BKEVE',
+      name: 'Banco Keve',
+      description: 'Indicadores, equipamentos, rankings e importações do Banco Keve.',
+    },
+  ]
+  return (
+    <main className="min-h-screen bg-[#f4f7f5] p-6 lg:p-12">
+      <div className="mx-auto max-w-5xl">
+        <div className="mb-10 flex items-center justify-between">
+          <div>
+            <p className="label">ATM Insight</p>
+            <h1 className="mb-2 mt-1 text-3xl">Escolha o cliente</h1>
+            <p className="text-slate-500">Cada espaço mantém dados, filtros e navegação separados.</p>
+          </div>
+          <Link to="/" className="text-sm text-slate-600 underline">
+            Sair
+          </Link>
+        </div>
+        <section className="grid gap-6 md:grid-cols-2">
+          {clients.map((client) => (
+            <Link
+              to={`/clientes/${client.code}`}
+              key={client.code}
+              className="group rounded-3xl border border-slate-200 bg-white p-7 text-inherit no-underline shadow-sm transition hover:-translate-y-1 hover:border-emerald-500 hover:shadow-lg"
+            >
+              <div className="mb-8 grid h-14 w-14 place-items-center rounded-2xl bg-emerald-100 text-xl font-bold text-emerald-800">
+                {client.code.slice(0, 2)}
+              </div>
+              <p className="label">Espaço do cliente</p>
+              <h2 className="mb-2 mt-1 text-2xl">{client.name}</h2>
+              <p className="text-sm text-slate-500">{client.description}</p>
+              <span className="mt-6 inline-block font-semibold text-emerald-700">
+                Entrar em {client.code} →
+              </span>
+            </Link>
+          ))}
+        </section>
+      </div>
+    </main>
+  )
+}
+
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <Shell />
+      <Routes>
+        <Route path="/" element={<LoginPage />} />
+        <Route path="/clientes" element={<ClientChooser />} />
+        <Route path="/clientes/:clientCode/*" element={<Shell />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
     </QueryClientProvider>
   )
 }

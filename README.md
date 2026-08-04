@@ -22,6 +22,10 @@ Inclui layout responsivo, Visão geral, Equipamentos, Rankings, Importações e 
 - Ficheiros reais estão excluídos por Git. Quando Storage for activado, use um bucket privado e políticas específicas.
 - A pré-visualização é processada no browser. A gravação transaccional será implementada numa função segura na próxima fase.
 
+### Acesso por utilizador e PIN
+
+A interface usa um nome de utilizador e PIN de quatro algarismos; emails técnicos nunca são apresentados. A Edge Function `pin-login` converte essas credenciais numa sessão Supabase Auth, limita a conta após cinco falhas e regista tentativas. Configure `PIN_PEPPER` exclusivamente nos segredos das Edge Functions. Os acessos a BCI e BKEVE são atribuídos separadamente em `user_client_access`, e as políticas RLS filtram todas as tabelas pelo cliente autorizado.
+
 ## Supabase
 
 A migração em `supabase/migrations` cria clientes, equipamentos, importações, métricas mensais, erros por linha, auditoria, índices e políticas RLS. Depois de criar e ligar um projecto Supabase, aplique as migrações com a versão actual da CLI e execute os advisors de segurança. Nenhum projecto remoto é criado nesta fase.
