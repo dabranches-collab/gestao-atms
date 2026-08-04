@@ -1,6 +1,18 @@
 import { useCallback, useState, type FormEvent } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import {
+  Area,
+  AreaChart,
+  Bar,
+  BarChart,
+  Cell,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+} from 'recharts'
+import {
   BarChart3,
   Building2,
   ChevronDown,
@@ -255,12 +267,16 @@ function RankingWidget({
   subtitle,
   rows,
   value,
+  numericValue,
+  variant = 'list',
   tone = 'emerald',
 }: {
   title: string
   subtitle: string
   rows: RankingRow[]
   value: (row: RankingRow) => string
+  numericValue: (row: RankingRow) => number
+  variant?: 'list' | 'bars' | 'area' | 'donut'
   tone?: 'emerald' | 'orange' | 'red' | 'sky'
 }) {
   const colors = {
@@ -269,12 +285,95 @@ function RankingWidget({
     red: 'bg-red-500',
     sky: 'bg-sky-600',
   }
+  const chartColors = { emerald: '#059669', orange: '#f97316', red: '#ef4444', sky: '#0284c7' }
+  const data = rows.slice(0, 10).map((row) => ({
+    name: row.terminal.replace('ATM-', ''),
+    value: numericValue(row),
+  }))
   return (
     <article className="card">
       <div className="mb-4">
         <h2 className="m-0 text-base">{title}</h2>
         <p className="mb-0 mt-1 text-xs text-slate-400">{subtitle}</p>
       </div>
+      {variant === 'bars' && (
+        <div className="mb-5 h-44 rounded-xl bg-slate-50 p-2">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={data} margin={{ top: 8, right: 4, left: 4, bottom: 0 }}>
+              <XAxis
+                dataKey="name"
+                axisLine={false}
+                tickLine={false}
+                tick={{ fontSize: 9, fill: '#94a3b8' }}
+              />
+              <Tooltip formatter={(chartValue) => Number(chartValue).toLocaleString('pt-AO')} />
+              <Bar dataKey="value" radius={[5, 5, 0, 0]} fill={chartColors[tone]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+      {variant === 'area' && (
+        <div className="mb-5 h-44 rounded-xl bg-slate-50 p-2">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={data} margin={{ top: 10, right: 8, left: 8, bottom: 0 }}>
+              <defs>
+                <linearGradient id={`fill-${tone}-${title.length}`} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor={chartColors[tone]} stopOpacity={0.45} />
+                  <stop offset="95%" stopColor={chartColors[tone]} stopOpacity={0.03} />
+                </linearGradient>
+              </defs>
+              <XAxis
+                dataKey="name"
+                axisLine={false}
+                tickLine={false}
+                tick={{ fontSize: 9, fill: '#94a3b8' }}
+              />
+              <Tooltip formatter={(chartValue) => Number(chartValue).toLocaleString('pt-AO')} />
+              <Area
+                type="monotone"
+                dataKey="value"
+                stroke={chartColors[tone]}
+                strokeWidth={3}
+                fill={`url(#fill-${tone}-${title.length})`}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+      {variant === 'donut' && (
+        <div className="mb-5 grid grid-cols-[145px_1fr] items-center gap-3 rounded-xl bg-slate-50 p-2">
+          <div className="h-36">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={data}
+                  dataKey="value"
+                  innerRadius={38}
+                  outerRadius={62}
+                  paddingAngle={2}
+                  stroke="none"
+                >
+                  {data.map((entry, index) => (
+                    <Cell
+                      key={entry.name}
+                      fill={
+                        index === 0 ? chartColors[tone] : `hsl(${155 - index * 7} 42% ${46 + index * 3}%)`
+                      }
+                    />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(chartValue) => Number(chartValue).toLocaleString('pt-AO')} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+          <div>
+            <strong className="block text-3xl" style={{ color: chartColors[tone] }}>
+              {value(rows[0])}
+            </strong>
+            <span className="text-xs text-slate-500">Maior valor do grupo</span>
+          </div>
+        </div>
+      )}
       <div className="space-y-3">
         {rows.slice(0, 10).map((row, index) => (
           <div className="grid grid-cols-[28px_1fr_auto] items-center gap-2" key={row.terminal}>
@@ -310,6 +409,8 @@ function Rankings() {
       subtitle: 'ATMs com maior número de operações',
       rows: descending('transactions'),
       value: (row: RankingRow) => row.transactions.toLocaleString('pt-AO'),
+      numericValue: (row: RankingRow) => row.transactions,
+      variant: 'bars' as const,
       tone: 'emerald' as const,
     },
     {
@@ -317,6 +418,8 @@ function Rankings() {
       subtitle: 'ATMs com menor actividade no mês',
       rows: ascending('transactions'),
       value: (row: RankingRow) => row.transactions.toLocaleString('pt-AO'),
+      numericValue: (row: RankingRow) => row.transactions,
+      variant: 'list' as const,
       tone: 'orange' as const,
     },
     {
@@ -324,6 +427,8 @@ function Rankings() {
       subtitle: 'Maior montante transaccionado',
       rows: descending('amount'),
       value: (row: RankingRow) => money.format(row.amount),
+      numericValue: (row: RankingRow) => row.amount,
+      variant: 'area' as const,
       tone: 'sky' as const,
     },
     {
@@ -332,6 +437,8 @@ function Rankings() {
       rows: descending('downtime'),
       value: (row: RankingRow) =>
         `${(row.downtime * 100).toLocaleString('pt-AO', { maximumFractionDigits: 1 })}%`,
+      numericValue: (row: RankingRow) => row.downtime * 100,
+      variant: 'donut' as const,
       tone: 'red' as const,
     },
     {
@@ -339,6 +446,8 @@ function Rankings() {
       subtitle: 'Variação de transacções face ao mês anterior',
       rows: descending('variation'),
       value: (row: RankingRow) => `+${row.variation}%`,
+      numericValue: (row: RankingRow) => row.variation,
+      variant: 'bars' as const,
       tone: 'emerald' as const,
     },
     {
@@ -346,6 +455,8 @@ function Rankings() {
       subtitle: 'Quebras de transacções face ao mês anterior',
       rows: ascending('variation'),
       value: (row: RankingRow) => `${row.variation}%`,
+      numericValue: (row: RankingRow) => Math.abs(row.variation),
+      variant: 'area' as const,
       tone: 'red' as const,
     },
     {
@@ -353,6 +464,8 @@ function Rankings() {
       subtitle: 'Mais dias com transacções',
       rows: descending('activeDays'),
       value: (row: RankingRow) => `${row.activeDays} dias`,
+      numericValue: (row: RankingRow) => row.activeDays,
+      variant: 'donut' as const,
       tone: 'sky' as const,
     },
     {
@@ -360,6 +473,8 @@ function Rankings() {
       subtitle: 'ATMs que exigem acompanhamento',
       rows: ascending('activeDays'),
       value: (row: RankingRow) => `${row.activeDays} dias`,
+      numericValue: (row: RankingRow) => row.activeDays,
+      variant: 'list' as const,
       tone: 'orange' as const,
     },
     {
@@ -367,6 +482,8 @@ function Rankings() {
       subtitle: 'Maior frequência de reposição de numerário',
       rows: descending('replenishments'),
       value: (row: RankingRow) => `${row.replenishments} vezes`,
+      numericValue: (row: RankingRow) => row.replenishments,
+      variant: 'bars' as const,
       tone: 'emerald' as const,
     },
     {
@@ -374,6 +491,8 @@ function Rankings() {
       subtitle: 'Menor frequência de reposição',
       rows: ascending('replenishments'),
       value: (row: RankingRow) => `${row.replenishments} vezes`,
+      numericValue: (row: RankingRow) => row.replenishments,
+      variant: 'area' as const,
       tone: 'orange' as const,
     },
   ]
@@ -387,6 +506,32 @@ function Rankings() {
       <div className="mb-5 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800">
         Cada widget apresenta <b>10 equipamentos</b>. Os valores serão alimentados pelas importações mensais.
       </div>
+      <section className="mb-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <article className="overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-700 to-emerald-500 p-5 text-white shadow-sm">
+          <p className="m-0 text-xs uppercase tracking-wider text-emerald-100">Melhor desempenho</p>
+          <strong className="mt-3 block text-3xl">ATM-0023</strong>
+          <span className="text-sm">21 402 transacções</span>
+        </article>
+        <article className="rounded-2xl border border-red-100 bg-white p-5 shadow-sm">
+          <p className="m-0 text-xs uppercase tracking-wider text-red-500">Downtime crítico</p>
+          <div className="mt-3 flex items-end justify-between">
+            <strong className="text-3xl text-red-600">14,4%</strong>
+            <span className="text-sm font-semibold">ATM-0009</span>
+          </div>
+        </article>
+        <article className="rounded-2xl border border-sky-100 bg-white p-5 shadow-sm">
+          <p className="m-0 text-xs uppercase tracking-wider text-sky-600">Maior subida</p>
+          <div className="mt-3 flex items-end justify-between">
+            <strong className="text-3xl text-emerald-600">+38%</strong>
+            <span className="text-sm font-semibold">ATM-0007</span>
+          </div>
+        </article>
+        <article className="rounded-2xl border border-orange-100 bg-white p-5 shadow-sm">
+          <p className="m-0 text-xs uppercase tracking-wider text-orange-600">Acção prioritária</p>
+          <strong className="mt-3 block text-xl">10 ATMs</strong>
+          <span className="text-sm text-slate-500">abaixo de 25 dias activos</span>
+        </article>
+      </section>
       <section className="grid gap-5 xl:grid-cols-2 2xl:grid-cols-3">
         {widgets.map((widget) => (
           <RankingWidget key={widget.title} {...widget} />
