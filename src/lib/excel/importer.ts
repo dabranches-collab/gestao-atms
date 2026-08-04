@@ -4,6 +4,7 @@ import { mapHeaders, REQUIRED_COLUMNS, type MetricField, normalizeText } from '.
 import { parseReportFilename } from './filename'
 
 const METADATA_KEYS: Record<string, keyof ImportMetadata> = { 'NOME DO REPORT': 'reportName', REFERENCIA: 'reference', 'DATA DA INFORMACAO': 'period', 'DATA DA GERACAO': 'generatedDate', 'BANCO ENTIDADE': 'entityCode', PROVEDOR: 'provider', CLASSIFICACAO: 'classification' }
+const CLIENT_ENTITY_CODES: Record<string, string> = { BCI: '5', BKEVE: '47' }
 const numericFields: MetricField[] = ['transactionCount', 'transactionAmount', 'activeTransactionDays', 'replenishmentCount', 'replenishmentAmount', 'dispensedAmount', 'collectedAmount', 'cashShortageDowntime']
 
 function readMetadata(sheet: XLSX.WorkSheet): ImportMetadata {
@@ -44,6 +45,9 @@ export function parseWorkbook(data: ArrayBuffer, filename: string): ImportPrevie
     if (detected.client && bat && !normalizeText(bat).includes(detected.client)) issues.push({ severity: 'warning', code: 'CLIENT_MISMATCH', row: rowNumber, field: 'bat', message: `BAT ${bat} difere do cliente ${detected.client}.` })
     rows.push({ terminalCode: terminal, bat, transactionCount: values.transactionCount, transactionAmount: values.transactionAmount, activeTransactionDays: values.activeTransactionDays, replenishmentCount: values.replenishmentCount, replenishmentAmount: values.replenishmentAmount, dispensedAmount: values.dispensedAmount, collectedAmount: values.collectedAmount, cashShortageDowntime: values.cashShortageDowntime })
   })
-  if (metadata.entityCode && detected.client && !normalizeText(metadata.entityCode).includes(detected.client)) issues.push({ severity: 'warning', code: 'METADATA_CLIENT_MISMATCH', message: 'O cliente nos metadados difere do nome do ficheiro.' })
+  if (metadata.entityCode && detected.client && CLIENT_ENTITY_CODES[detected.client] && normalizeText(metadata.entityCode) !== CLIENT_ENTITY_CODES[detected.client]) issues.push({ severity: 'warning', code: 'METADATA_CLIENT_MISMATCH', message: 'O código Banco/Entidade difere do cliente detectado.' })
+  const metadataPeriod = metadata.period?.match(/20\d{4}/)?.[0]
+  const detectedPeriod = detected.period?.replaceAll('-', '').slice(0, 6)
+  if (metadataPeriod && detectedPeriod && metadataPeriod !== detectedPeriod) issues.push({ severity: 'error', code: 'METADATA_PERIOD_MISMATCH', message: 'A Data da Informação difere do período no nome do ficheiro.' })
   return { filename, mainSheet, metadata, detected, rows: rows.slice(0, 5), totalRows: matrix.length > 0 ? matrix.length - 1 : 0, recognizedColumns: Object.keys(headerMap), issues }
 }

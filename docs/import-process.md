@@ -7,4 +7,4 @@
 5. Erros bloqueantes, avisos e informações são mostrados antes da confirmação.
 6. A fase seguinte calculará SHA-256 e enviará uma única operação transaccional autenticada.
 
-Actualmente são mostradas as cinco primeiras linhas no contrato de pré-visualização. Ficheiros reais não foram encontrados nem usados nesta fase; os testes geram workbooks sintéticos com os cabeçalhos especificados.
+Actualmente são mostradas as cinco primeiras linhas no contrato de pré-visualização. Os ficheiros reais de Julho de 2026 foram validados apenas na pasta temporária local e não foram copiados para o repositório. O importador reconhece também sufixos de cópia do Windows como ` (1)` e os códigos Banco/Entidade 5 (BCI) e 47 (BKEVE).
