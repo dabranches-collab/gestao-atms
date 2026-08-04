@@ -111,12 +111,7 @@ function Shell() {
           <Routes>
             <Route index element={<Overview />} />
             <Route path="equipamentos" element={<Equipment />} />
-            <Route
-              path="rankings"
-              element={
-                <Base title="Rankings" text="Compare os melhores e piores desempenhos por indicador." />
-              }
-            />
+            <Route path="rankings" element={<Rankings />} />
             <Route path="importacoes" element={<Imports />} />
             <Route
               path="definicoes"
@@ -188,6 +183,20 @@ function Overview() {
           </article>
         ))}
       </section>
+      <section className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {[
+          ['Dias com transacções', '29,4 dias', '+1,2 vs. Jun'],
+          ['Abastecimentos', '2 418', '+7,1% vs. Jun'],
+          ['Montante abastecido', money.format(18640000000), '+5,8% vs. Jun'],
+          ['Montante dispensado', money.format(14190000000), '76,1% do abastecido'],
+        ].map(([label, value, detail]) => (
+          <article className="card" key={label}>
+            <p className="label">{label}</p>
+            <strong className="mt-3 block text-xl text-slate-900">{value}</strong>
+            <p className="mb-0 text-xs text-emerald-700">{detail}</p>
+          </article>
+        ))}
+      </section>
       <section className="mt-5 grid gap-5 xl:grid-cols-3">
         <article className="card xl:col-span-2">
           <h2 className="mt-0 text-base">Evolução mensal</h2>
@@ -216,6 +225,172 @@ function Overview() {
             </div>
           ))}
         </article>
+      </section>
+    </>
+  )
+}
+
+type RankingRow = {
+  terminal: string
+  transactions: number
+  amount: number
+  downtime: number
+  activeDays: number
+  replenishments: number
+  variation: number
+}
+
+const rankingRows: RankingRow[] = Array.from({ length: 24 }, (_, index) => ({
+  terminal: `ATM-${String(index + 1).padStart(4, '0')}`,
+  transactions: 5200 + ((index * 3791) % 16800),
+  amount: 58_000_000 + ((index * 47_300_000) % 210_000_000),
+  downtime: 0.008 + ((index * 17) % 143) / 1000,
+  activeDays: 17 + ((index * 7) % 15),
+  replenishments: 8 + ((index * 11) % 25),
+  variation: -38 + ((index * 13) % 77),
+}))
+
+function RankingWidget({
+  title,
+  subtitle,
+  rows,
+  value,
+  tone = 'emerald',
+}: {
+  title: string
+  subtitle: string
+  rows: RankingRow[]
+  value: (row: RankingRow) => string
+  tone?: 'emerald' | 'orange' | 'red' | 'sky'
+}) {
+  const colors = {
+    emerald: 'bg-emerald-600',
+    orange: 'bg-orange-500',
+    red: 'bg-red-500',
+    sky: 'bg-sky-600',
+  }
+  return (
+    <article className="card">
+      <div className="mb-4">
+        <h2 className="m-0 text-base">{title}</h2>
+        <p className="mb-0 mt-1 text-xs text-slate-400">{subtitle}</p>
+      </div>
+      <div className="space-y-3">
+        {rows.slice(0, 10).map((row, index) => (
+          <div className="grid grid-cols-[28px_1fr_auto] items-center gap-2" key={row.terminal}>
+            <span className="text-xs font-bold text-slate-400">{index + 1}</span>
+            <div className="min-w-0">
+              <div className="mb-1 flex justify-between gap-2 text-xs">
+                <b>{row.terminal}</b>
+              </div>
+              <div className="h-1.5 overflow-hidden rounded-full bg-slate-100">
+                <div
+                  className={`h-full rounded-full ${colors[tone]}`}
+                  style={{ width: `${100 - index * 6}%` }}
+                />
+              </div>
+            </div>
+            <strong className="whitespace-nowrap text-xs text-slate-700">{value(row)}</strong>
+          </div>
+        ))}
+      </div>
+    </article>
+  )
+}
+
+function Rankings() {
+  const descending = <K extends keyof RankingRow>(key: K) =>
+    [...rankingRows].sort((a, b) => Number(b[key]) - Number(a[key]))
+  const ascending = <K extends keyof RankingRow>(key: K) =>
+    [...rankingRows].sort((a, b) => Number(a[key]) - Number(b[key]))
+
+  const widgets = [
+    {
+      title: 'Top 10 transacções',
+      subtitle: 'ATMs com maior número de operações',
+      rows: descending('transactions'),
+      value: (row: RankingRow) => row.transactions.toLocaleString('pt-AO'),
+      tone: 'emerald' as const,
+    },
+    {
+      title: '10 menos transacções',
+      subtitle: 'ATMs com menor actividade no mês',
+      rows: ascending('transactions'),
+      value: (row: RankingRow) => row.transactions.toLocaleString('pt-AO'),
+      tone: 'orange' as const,
+    },
+    {
+      title: 'Top 10 montantes',
+      subtitle: 'Maior montante transaccionado',
+      rows: descending('amount'),
+      value: (row: RankingRow) => money.format(row.amount),
+      tone: 'sky' as const,
+    },
+    {
+      title: 'Top 10 downtime',
+      subtitle: 'Maior indisponibilidade por falta de notas',
+      rows: descending('downtime'),
+      value: (row: RankingRow) =>
+        `${(row.downtime * 100).toLocaleString('pt-AO', { maximumFractionDigits: 1 })}%`,
+      tone: 'red' as const,
+    },
+    {
+      title: '10 maiores subidas',
+      subtitle: 'Variação de transacções face ao mês anterior',
+      rows: descending('variation'),
+      value: (row: RankingRow) => `+${row.variation}%`,
+      tone: 'emerald' as const,
+    },
+    {
+      title: '10 maiores descidas',
+      subtitle: 'Quebras de transacções face ao mês anterior',
+      rows: ascending('variation'),
+      value: (row: RankingRow) => `${row.variation}%`,
+      tone: 'red' as const,
+    },
+    {
+      title: 'Top 10 dias activos',
+      subtitle: 'Mais dias com transacções',
+      rows: descending('activeDays'),
+      value: (row: RankingRow) => `${row.activeDays} dias`,
+      tone: 'sky' as const,
+    },
+    {
+      title: '10 menos dias activos',
+      subtitle: 'ATMs que exigem acompanhamento',
+      rows: ascending('activeDays'),
+      value: (row: RankingRow) => `${row.activeDays} dias`,
+      tone: 'orange' as const,
+    },
+    {
+      title: 'Top 10 abastecimentos',
+      subtitle: 'Maior frequência de reposição de numerário',
+      rows: descending('replenishments'),
+      value: (row: RankingRow) => `${row.replenishments} vezes`,
+      tone: 'emerald' as const,
+    },
+    {
+      title: '10 menos abastecimentos',
+      subtitle: 'Menor frequência de reposição',
+      rows: ascending('replenishments'),
+      value: (row: RankingRow) => `${row.replenishments} vezes`,
+      tone: 'orange' as const,
+    },
+  ]
+
+  return (
+    <>
+      <Heading
+        title="Rankings e variações"
+        text="Top 10, bottom 10, subidas e descidas dos principais indicadores."
+      />
+      <div className="mb-5 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800">
+        Cada widget apresenta <b>10 equipamentos</b>. Os valores serão alimentados pelas importações mensais.
+      </div>
+      <section className="grid gap-5 xl:grid-cols-2 2xl:grid-cols-3">
+        {widgets.map((widget) => (
+          <RankingWidget key={widget.title} {...widget} />
+        ))}
       </section>
     </>
   )
