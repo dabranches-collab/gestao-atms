@@ -431,7 +431,7 @@ function LoginPage() {
       return setError('Utilizador ou PIN inválido.')
     }
     await supabase.auth.setSession(data.session)
-    navigate('/clientes')
+    navigate(data.session.user?.app_metadata?.must_change_pin ? '/alterar-pin' : '/clientes')
   }
 
   return (
@@ -486,6 +486,66 @@ function LoginPage() {
         >
           Pré-visualizar organização dos clientes
         </button>
+      </div>
+    </main>
+  )
+}
+
+function ChangePinPage() {
+  const navigate = useNavigate()
+  const [pin, setPin] = useState('')
+  const [confirmation, setConfirmation] = useState('')
+  const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  async function submit(event: FormEvent) {
+    event.preventDefault()
+    if (!/^\d{4}$/.test(pin) || pin === '0000')
+      return setError('Escolha um PIN diferente de 0000 com quatro algarismos.')
+    if (pin !== confirmation) return setError('Os dois PINs não coincidem.')
+    if (!supabase) return setError('A ligação ao Supabase não está configurada.')
+    setBusy(true)
+    setError('')
+    const { error: functionError } = await supabase.functions.invoke('change-pin', { body: { pin } })
+    if (functionError) {
+      setBusy(false)
+      return setError('Não foi possível alterar o PIN. Tente novamente.')
+    }
+    await supabase.auth.signOut()
+    navigate('/')
+  }
+
+  return (
+    <main className="grid min-h-screen place-items-center bg-[#0d2b22] p-5">
+      <div className="w-full max-w-md rounded-3xl bg-white p-8 shadow-2xl">
+        <h1 className="mt-0 text-2xl">Definir novo PIN</h1>
+        <p className="text-sm text-slate-600">Por segurança, altere o PIN inicial antes de continuar.</p>
+        <form onSubmit={submit} className="space-y-5">
+          {[
+            { label: 'Novo PIN', value: pin, set: setPin },
+            { label: 'Confirmar novo PIN', value: confirmation, set: setConfirmation },
+          ].map((field) => (
+            <label key={field.label} className="block text-sm font-semibold">
+              {field.label}
+              <input
+                inputMode="numeric"
+                autoComplete="new-password"
+                maxLength={4}
+                value={field.value}
+                onChange={(event) => field.set(event.target.value.replace(/\D/g, ''))}
+                className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 text-center text-2xl tracking-[0.5em] outline-none focus:border-emerald-600"
+                required
+              />
+            </label>
+          ))}
+          {error && <p className="rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</p>}
+          <button
+            disabled={busy}
+            className="w-full rounded-xl bg-emerald-700 px-4 py-3 font-semibold text-white disabled:opacity-60"
+          >
+            {busy ? 'A guardar…' : 'Guardar novo PIN'}
+          </button>
+        </form>
       </div>
     </main>
   )
@@ -546,6 +606,7 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
       <Routes>
         <Route path="/" element={<LoginPage />} />
+        <Route path="/alterar-pin" element={<ChangePinPage />} />
         <Route path="/clientes" element={<ClientChooser />} />
         <Route path="/clientes/:clientCode/*" element={<Shell />} />
         <Route path="*" element={<Navigate to="/" replace />} />
