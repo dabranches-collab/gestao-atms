@@ -13,7 +13,7 @@ const money = new Intl.NumberFormat('pt-AO', { style: 'currency', currency: 'AOA
 function Shell() {
   const [open, setOpen] = useState(false)
   return <div className="min-h-screen bg-[#f4f7f5] lg:grid lg:grid-cols-[260px_1fr]">
-    <aside className={`${open ? 'block' : 'hidden'} fixed inset-y-0 z-20 w-64 bg-[#102b22] p-5 text-white lg:static lg:block lg:w-auto`}>
+    <aside className={`${open ? 'block' : 'max-lg:hidden'} fixed inset-y-0 z-20 w-64 bg-[#102b22] p-5 text-white lg:static lg:block lg:w-auto`}>
       <div className="mb-9 flex items-center gap-3"><div className="rounded-xl bg-emerald-400 p-2 text-[#102b22]"><BarChart3 /></div><div><b>ATM Insight</b><p className="m-0 text-xs text-emerald-100">Análise de desempenho</p></div></div>
       <nav className="space-y-1">{nav.map(({ to, label, icon: Icon }) => <NavLink key={to} to={to} end={to === '/'} onClick={() => setOpen(false)} className={({ isActive }) => `flex items-center gap-3 rounded-xl px-3 py-3 text-sm ${isActive ? 'bg-white/14 font-semibold text-white' : 'text-slate-300 hover:bg-white/8'}`}><Icon size={19} />{label}</NavLink>)}</nav>
       <div className="absolute bottom-5 left-5 right-5 rounded-xl border border-white/10 bg-white/5 p-3 text-xs text-slate-300"><b className="text-white">Dados reservados</b><p className="mb-0">Acesso sujeito a autenticação e perfil.</p></div>
